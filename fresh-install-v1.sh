@@ -18,23 +18,49 @@ line_break() {
 	echo ""
 }
 
+# Function to show spinner
+show_spinner() {
+  local pid=$!
+  local delay=0.1
+  local spinstr='-\|/'
+  while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
+    local temp=${spinstr#?}
+    printf " [%c]  " "$spinstr"
+    local spinstr=$temp${spinstr%"$temp"}
+    sleep $delay
+    printf "\b\b\b\b\b\b"
+  done
+  printf "    \b\b\b\b"
+}
+
 # Dependency installation
 initialize_setup() {
   (
     clear
     display_motd
     echo "Updating macOS... (press 's' to skip)"
-    softwareupdate -ia --verbose > /dev/null
+    softwareupdate -ia --verbose > /dev/null &
+  
+		show_spinner
+  	echo " Done."
     line_break
 
     echo "Installing Xcode Command Line Tools... (press 's' to skip)"
-    xcode-select --install > /dev/null
+    xcode-select --install > /dev/null &
+  
+		local SETUP_PID=$!
+		show_spinner $SETUP_PID
+		echo " Done."
     line_break
 
     if ! command -v brew &> /dev/null; then
       echo "Installing Homebrew... (press 's' to skip)"
-      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" > /dev/null
-      line_break
+      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" > /dev/null &
+  
+			local SETUP_PID=$!
+			show_spinner $SETUP_PID
+			echo " Done."
+			line_break
     fi
 
     echo "Updating Homebrew... (press 's' to skip)"
@@ -42,13 +68,13 @@ initialize_setup() {
       echo "Failed to update Homebrew. Attempting to fix..."
       git -C "$(brew --repo)" fetch
       git -C "$(brew --repo)" reset --hard FETCH_HEAD
-      brew update
-      line_break
+      brew update &
+  
+			local SETUP_PID=$!
+			show_spinner $SETUP_PID
+			echo " Done."
+			line_break
     fi
-
-    echo "Installing Git... (press 's' to skip)"
-    brew install git > /dev/null
-    line_break
   ) &
   
   SETUP_PID=$!
@@ -64,68 +90,166 @@ initialize_setup() {
   done
 }
 
+# Process software installation
+process_installation() {
 
-# Available software options
-software_names=("VSCode" "Google Chrome" "Brave Browser" "Firefox" "Edge Browser")
-software_casks=("visual-studio-code" "google-chrome" "brave-browser" "firefox" "microsoft-edge")
+	clear
+	display_motd
 
-initialize_setup
+	local name=$1
+	local cask=$2
+
+	if brew list --cask "$cask" &> /dev/null; then
+		read -n 1 -p "$name is already installed. Do you want to (u)ninstall or (r)einstall? " opt
+		if [[ "$opt" == "u" ]]; then
+			brew uninstall --cask "$cask"
+		elif [[ "$opt" == "r" ]]; then
+			brew reinstall --cask "$cask"
+		fi
+	else
+		echo "Installing $name..."
+		if ! brew install --cask "$cask"; then
+      echo "${name} cask installation failed. Attempting to install using brew..."
+      brew install "${cask}"
+    else
+			echo "${name}" cask was installed!
+		fi
+	fi
+}
+
+# Main function to handle sub-menus
+show_submenu() {
+	local names=("${!1}")
+	local casks=("${!2}")
+
+	while true; do
+		clear
+		display_motd
+		echo "Select software to install:"
+		for i in "${!names[@]}"; do
+			local installed=""
+			if brew list --cask "${casks[$i]}" &> /dev/null; then
+				installed="(installed - cask)"
+			elif brew list "${casks[$i]}" &> /dev/null; then
+				installed="(installed)"
+			fi
+			echo "$((i + 1))) ${names[$i]} $installed"
+		done
+		line_break
+		echo "-------------------------"
+		echo "a) Install All"
+		echo "e) Exit to Main Menu"
+		echo "r) Reload"
+
+		line_break
+		read -n 1 -p "Enter the number corresponding to your choice: " choice
+
+		case $choice in
+		[1-${#names[@]}])
+			((choice--))
+			process_installation "${names[$choice]}" "${casks[$choice]}"
+			;;
+		a)
+			for i in "${!names[@]}"; do
+				process_installation "${names[$i]}" "${casks[$i]}"
+			done
+			;;
+		e)
+			break
+			;;
+		r)
+			clear
+			echo "Reloading..."
+			initialize_setup
+			;;
+		*)
+			echo "Invalid choice, please try again."
+			;;
+		esac
+	done
+}
+
+
+# Start the installer tool
+tool_init() {
+	clear
+	display_motd
+	echo "Would you like to install tool dependancies? (y)es / (n)o"
+	echo "(System updates, Brew,  XCode CLI, etc)"
+	line_break
+	read -n 1 -p "Enter your selection: " choice
+
+	case $choice in
+	y)
+		initialize_setup
+		;;
+	n)
+		clear
+		echo "Loading software list..."
+		sleep 0.75
+		;;
+	esac
+}
+
+tool_init
+
+# Software categories
+browsers=("Brave Browser" "Google Chrome" "Edge Browser" "Firefox" "Opera")
+browser_casks=("brave-browser" "google-chrome" "microsoft-edge" "firefox" "opera")
+
+dev_tools=("VSCode" "Fig" "Filezilla" "Insomnia" "Postman" "TablePlus")
+dev_casks=("visual-studio-code" "fig" "filezilla" "insomnia" "postman" "tableplus")
+
+cli_tools=("npm" "nvm" "Python" "Git")
+cli_casks=("npm" "nvm" "python" "git")
+
+others=("Rectangle")
+other_casks=("rectangle")
 
 while true; do
-  clear
+	clear
 	display_motd
-  echo "Select software to install:"
-  for i in "${!software_names[@]}"; do
-    installed=""
-    if brew list --cask "${software_casks[$i]}" &> /dev/null; then
-      installed="(installed)"
-    fi
-    echo "$((i + 1))) ${software_names[$i]} $installed"
-  done
+	echo "Main Menu:"
+	echo "1) Browsers"
+	echo "2) Development tools"
+	echo "3) CLI tools"
+	echo "4) Other"
 	line_break
-  echo "-------------------------"
-  echo "a) Install All"
-  echo "e) Exit"
-  echo "r) Reload"
-
+	echo "-------------------------"
+	echo "e) Exit"
+	echo "r) Reload"
 	line_break
-  read -p "Enter the number corresponding to your choice: " choice
+	read -n 1 -p "Enter the number corresponding to your choice: " choice
 
-  case $choice in
-  [1-5])
-    ((choice--))
-    if brew list --cask "${software_casks[$choice]}" &> /dev/null; then
-      read -p "${software_names[$choice]} is already installed. Do you want to (u)ninstall or (r)einstall? " opt
-      if [[ "$opt" == "u" ]]; then
-        brew uninstall --cask "${software_casks[$choice]}"
-      elif [[ "$opt" == "r" ]]; then
-        brew reinstall --cask "${software_casks[$choice]}"
-      fi
-    else
-      echo "Installing ${software_names[$choice]}..."
-      brew install --cask "${software_casks[$choice]}"
-    fi
-    ;;
-  a)
-    for i in "${!software_names[@]}"; do
-      if ! brew list --cask "${software_casks[$i]}" &> /dev/null; then
-        echo "Installing ${software_names[$i]}..."
-        brew install --cask "${software_casks[$i]}"
-      fi
-    done
-    ;;
-  e)
+	case $choice in
+	1)
+		show_submenu browsers[@] browser_casks[@]
+		;;
+	2)
+		show_submenu dev_tools[@] dev_casks[@]
+		;;
+	3)
+		show_submenu cli_tools[@] cli_casks[@]
+		;;
+	4)
+		show_submenu others[@] other_casks[@]
+		;;
+	e)
 		clear
-    echo "Exiting..."
-    exit 0
-    ;;
-  r)
-    clear
-    echo "Reloading..."
-    initialize_setup
-    ;;
-  *)
-    echo "Invalid choice, please try again."
-    ;;
-  esac
+		echo "Exiting..."
+		sleep 1 
+		reset
+		exit 0
+		;;
+	r)
+		clear
+		echo "Reloading..."
+		sleep 1 
+		reset
+		tool_init
+		;;
+	*)
+		echo "Invalid choice, please try again."
+		;;
+	esac
 done
