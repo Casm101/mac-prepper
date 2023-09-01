@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Declaration of global variables
+installed_casks=
+installed_formulas=
+
 # Tool MOTD
 display_motd() {
 	cat << "EOF"
@@ -13,10 +17,19 @@ display_motd() {
 EOF
 }
 
+
+# Retrieve installed software
+initialize_installed_lists() {
+  installed_casks=$(brew list --cask)
+  installed_formulas=$(brew list)
+}
+
+
 # Simple line-break
 line_break() {
 	echo ""
 }
+
 
 # Function to show spinner
 show_spinner() {
@@ -32,6 +45,7 @@ show_spinner() {
   done
   printf "    \b\b\b\b"
 }
+
 
 # Dependency installation
 initialize_setup() {
@@ -90,21 +104,60 @@ initialize_setup() {
   done
 }
 
+
 # Process software installation
 process_installation() {
 
 	clear
 	display_motd
 
+	# Declare local software variables
 	local name=$1
 	local cask=$2
+	local isCask=
 
-	if brew list --cask "$cask" &> /dev/null; then
-		read -n 1 -p "$name is already installed. Do you want to (u)ninstall or (r)einstall? " opt
+	# Check if software is installed
+	if [[ $installed_casks == *"${casks[$i]}"* || $installed_formulas == *"${casks[$i]}"* ]] &> /dev/null; then
+
+		# Check software type
+		if [[ $installed_casks == *"${casks[$i]}"* ]] &> /dev/null; then
+			isCask=true
+		elif [[ $installed_formulas == *"${casks[$i]}"* ]] &> /dev/null; then
+			isCask=false
+		fi
+
+		# Display management menu
+		echo "$name is already installed"
+		line_break
+		echo "Manage $name installation:"
+		echo "u) Uninstall"
+		echo "r) Reinstall"
+		line_break
+		echo "-------------------------"
+		echo "c) Cancel operation"
+
+		# Prompt user input
+		read -n 1 -p "Select operation to process: " opt
+
+		# Process unser selection
 		if [[ "$opt" == "u" ]]; then
-			brew uninstall --cask "$cask"
+
+			if [[ $isCask == true ]]; then
+				brew uninstall --cask "$cask"
+			else
+				brew uninstall "$cask"
+			fi
+
 		elif [[ "$opt" == "r" ]]; then
-			brew reinstall --cask "$cask"
+			
+			if [[ $isCask == true ]]; then
+				brew reinstall --cask "$cask"
+			else
+				brew reinstall "$cask"
+			fi
+
+		elif [[ $opt == "c" ]]; then
+			break
 		fi
 	else
 		echo "Installing $name..."
@@ -115,7 +168,12 @@ process_installation() {
 			echo "${name}" cask was installed!
 		fi
 	fi
+
+	# Reload installed software
+	initialize_installed_lists
+	show_spinner
 }
+
 
 # Main function to handle sub-menus
 show_submenu() {
@@ -128,9 +186,9 @@ show_submenu() {
 		echo "Select software to install:"
 		for i in "${!names[@]}"; do
 			local installed=""
-			if brew list --cask "${casks[$i]}" &> /dev/null; then
+			if [[ $installed_casks == *"${casks[$i]}"* ]] &> /dev/null; then
 				installed="(installed - cask)"
-			elif brew list "${casks[$i]}" &> /dev/null; then
+			elif [[ $installed_formulas == *"${casks[$i]}"* ]] &> /dev/null; then
 				installed="(installed)"
 			fi
 			echo "$((i + 1))) ${names[$i]} $installed"
@@ -186,7 +244,10 @@ tool_init() {
 	n)
 		clear
 		echo "Loading software list..."
-		sleep 0.75
+
+		# Load installed software
+		initialize_installed_lists
+		show_spinner
 		;;
 	esac
 }
