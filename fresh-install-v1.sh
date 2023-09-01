@@ -142,6 +142,8 @@ process_installation() {
 		# Process unser selection
 		if [[ "$opt" == "u" ]]; then
 
+			# Handle uninstall
+			line_break && line_break
 			if [[ $isCask == true ]]; then
 				brew uninstall --cask "$cask"
 			else
@@ -150,6 +152,8 @@ process_installation() {
 
 		elif [[ "$opt" == "r" ]]; then
 			
+			# Handle reinstall
+			line_break && line_break
 			if [[ $isCask == true ]]; then
 				brew reinstall --cask "$cask"
 			else
@@ -164,6 +168,8 @@ process_installation() {
 		if ! brew install --cask "$cask"; then
       echo "${name} cask installation failed. Attempting to install using brew..."
       brew install "${cask}"
+			line_break
+			echo "${name}" formula was installed!
     else
 			echo "${name}" cask was installed!
 		fi
@@ -171,7 +177,6 @@ process_installation() {
 
 	# Reload installed software
 	initialize_installed_lists
-	show_spinner
 }
 
 
@@ -233,7 +238,7 @@ tool_init() {
 	clear
 	display_motd
 	echo "Would you like to install tool dependancies? (y)es / (n)o"
-	echo "(System updates, Brew,  XCode CLI, etc)"
+	echo "(Installs updates, Brew, xcode-cli-tools, etc)"
 	line_break
 	read -n 1 -p "Enter your selection: " choice
 
@@ -298,14 +303,14 @@ while true; do
 	e)
 		clear
 		echo "Exiting..."
-		sleep 1 
+		sleep .75 
 		reset
 		exit 0
 		;;
 	r)
 		clear
 		echo "Reloading..."
-		sleep 1 
+		sleep .75 
 		reset
 		tool_init
 		;;
