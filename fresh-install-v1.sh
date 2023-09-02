@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Declaration of global variables
+isInstalledBrew=false
 installed_casks=
 installed_formulas=
 
@@ -20,8 +21,10 @@ EOF
 
 # Retrieve installed software
 initialize_installed_lists() {
-  installed_casks=$(brew list --cask)
-  installed_formulas=$(brew list)
+	if [ "$isInstalledBrew" = true ]; then
+		installed_casks=$(brew list --cask)
+		installed_formulas=$(brew list)
+	fi
 }
 
 
@@ -50,45 +53,41 @@ show_spinner() {
 # Dependency installation
 initialize_setup() {
   (
+
+		# Clear for installs
     clear
     display_motd
-    echo "Updating macOS... (press 's' to skip)"
-    softwareupdate -ia --verbose > /dev/null &
-  
-		show_spinner
-  	echo " Done."
-    line_break
 
-    echo "Installing Xcode Command Line Tools... (press 's' to skip)"
-    xcode-select --install > /dev/null &
-  
-		local SETUP_PID=$!
-		show_spinner $SETUP_PID
-		echo " Done."
-    line_break
-
-    if ! command -v brew &> /dev/null; then
+		# Install brew
+		if ! command -v brew &> /dev/null; then
       echo "Installing Homebrew... (press 's' to skip)"
       /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" > /dev/null &
   
-			local SETUP_PID=$!
-			show_spinner $SETUP_PID
+			show_spinner
+			isInstalledBrew=true
 			echo " Done."
 			line_break
-    fi
+    else
+			echo "✅ Brew is already installed."
+			isInstalledBrew=true
+			line_break
+			sleep .5
+		fi
 
-    echo "Updating Homebrew... (press 's' to skip)"
-    if ! brew update; then
-      echo "Failed to update Homebrew. Attempting to fix..."
-      git -C "$(brew --repo)" fetch
-      git -C "$(brew --repo)" reset --hard FETCH_HEAD
-      brew update &
-  
-			local SETUP_PID=$!
-			show_spinner $SETUP_PID
+		# Install xcode-cli-tools
+		if ! command -v xcode-select &> /dev/null; then
+			echo "Installing Xcode Command Line Tools... (press 's' to skip)"
+			xcode-select --install &
+		
+			show_spinner
 			echo " Done."
+			sleep 5
 			line_break
-    fi
+		else
+			echo "✅ XCode tools are already installed."
+			sleep .5
+		fi
+
   ) &
   
   SETUP_PID=$!
@@ -99,6 +98,7 @@ initialize_setup() {
       kill -9 $SETUP_PID
       wait $SETUP_PID 2> /dev/null
       echo "Skipped setup."
+			sleep .5
       break
     fi
   done
@@ -281,6 +281,14 @@ other_casks=("rectangle" "vlc")
 while true; do
 	clear
 	display_motd
+
+	if [ "$isInstalledBrew" = true ]; then
+		echo "yes"
+	else
+		echo "no: $isInstalledBrew"
+	fi
+	line_break
+
 	echo "Main Menu:"
 	echo "1) Browsers"
 	echo "2) Development tools"
