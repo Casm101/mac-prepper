@@ -263,14 +263,20 @@ tool_init
 browsers=("Brave Browser" "Google Chrome" "Edge Browser" "Firefox" "Opera")
 browser_casks=("brave-browser" "google-chrome" "microsoft-edge" "firefox" "opera")
 
-dev_tools=("VSCode" "Fig" "Filezilla" "Insomnia" "Postman" "TablePlus")
-dev_casks=("visual-studio-code" "fig" "filezilla" "insomnia" "postman" "tableplus")
+dev_tools=("VSCode" "Fig" "Filezilla" "Insomnia" "Postman" "TablePlus" "Termius" "Cursor" "Docker")
+dev_casks=("visual-studio-code" "fig" "filezilla" "insomnia" "postman" "tableplus" "termius" "cursor" "docker")
 
-cli_tools=("npm" "nvm" "Python" "Git")
-cli_casks=("npm" "nvm" "python" "git")
+cli_tools=("npm" "nvm" "Python" "Git" "NeoFetch")
+cli_casks=("npm" "nvm" "python" "git" "neofetch")
 
-others=("Rectangle")
-other_casks=("rectangle")
+socials=("Beeper" "Whatsapp" "Discord")
+socials_casks=("beeper" "whatsapp" "discord")
+
+office_tools=("WPS Office Suite" "Obsidian")
+office_casks=("wpsoffice" "obsidian")
+
+others=("Rectangle" "VLC")
+other_casks=("rectangle" "vlc")
 
 while true; do
 	clear
@@ -279,7 +285,9 @@ while true; do
 	echo "1) Browsers"
 	echo "2) Development tools"
 	echo "3) CLI tools"
-	echo "4) Other"
+	echo "4) Communications / Social"
+	echo "5) Office tools"
+	echo "6) Other"
 	line_break
 	echo "-------------------------"
 	echo "e) Exit"
@@ -298,6 +306,12 @@ while true; do
 		show_submenu cli_tools[@] cli_casks[@]
 		;;
 	4)
+		show_submenu socials[@] socials_casks[@]
+		;;
+	5)
+		show_submenu office_tools[@] office_casks[@]
+		;;
+	6)
 		show_submenu others[@] other_casks[@]
 		;;
 	e)
