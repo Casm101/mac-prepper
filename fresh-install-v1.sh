@@ -8,10 +8,12 @@ installed_formulas=
 # Tool MOTD
 display_motd() {
 	cat << "EOF"
-   ___ __    __  __ __   _ __  _   __ _____ __  _   _   ___ ___  
- / _//  \ /' _/|  V  | | |  \| |/' _/_   _/  \| | | | | __| _ \ 
-| \_| /\ |`._`.| \_/ | | | | ' |`._`. | || /\ | |_| |_| _|| v / 
- \__/_||_||___/|_| |_| |_|_|\__||___/ |_||_||_|___|___|___|_|_\
+  __  __              ____                                 
+ |  \/  | __ _  ___  |  _ \ _ __ ___ _ __  _ __   ___ _ __ 
+ | |\/| |/ _` |/ __| | |_) | '__/ _ \ '_ \| '_ \ / _ \ '__|
+ | |  | | (_| | (__  |  __/| | |  __/ |_) | |_) |  __/ |   
+ |_|  |_|\__,_|\___| |_|   |_|  \___| .__/| .__/ \___|_|   
+                                    |_|   |_|              
 
  by Casm101
 
@@ -21,10 +23,8 @@ EOF
 
 # Retrieve installed software
 initialize_installed_lists() {
-	if [ "$isInstalledBrew" = true ]; then
-		installed_casks=$(brew list --cask)
-		installed_formulas=$(brew list)
-	fi
+	installed_casks=$(brew list --cask)
+	installed_formulas=$(brew list)
 }
 
 
@@ -275,8 +275,8 @@ socials_casks=("beeper" "whatsapp" "discord")
 office_tools=("WPS Office Suite" "Obsidian")
 office_casks=("wpsoffice" "obsidian")
 
-others=("Rectangle" "VLC")
-other_casks=("rectangle" "vlc")
+others=("Rectangle" "AtlTab" "VLC")
+other_casks=("rectangle" "alt-tab" "vlc")
 
 while true; do
 	clear
